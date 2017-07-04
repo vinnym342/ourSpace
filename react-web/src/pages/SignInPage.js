@@ -12,7 +12,7 @@ const SignInPage = ({
     <div>
     {
         !!token ? (
-            <Redirect to='/movies' />
+            <Redirect to='/' />
         ) : (
             <SignInForm
             toggleCreateAccount={ toggleCreateAccount }

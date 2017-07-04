@@ -6,17 +6,37 @@ import {
 } from 'react-router-dom'
 import './App.css'
 import PrimaryNav from './components/PrimaryNav'
+import ErrorMessage from './components/ErrorMessage'
 import HomePage from './pages/HomePage'
 import SignInPage from './pages/SignInPage'
 import * as authAPI from './api/auth'
+import { setApiToken} from './api/init'
+
+const tokenKey = 'userToken'
+const savedToken = localStorage.getItem(tokenKey)
+setApiToken(savedToken)
 
 class App extends Component {
   // Initial state
   state = {
     error: null,
-    token: null,
-    movies: null, // Null means not loaded yet
-    createAccount: true
+    token: savedToken,
+    createAccount: false
+  }
+
+  handleSignOut = () => {
+    localStorage.removeItem(tokenKey)
+    this.setState({ token: null })
+  }
+
+  setToken = (token) => {
+    if (token) {
+      localStorage.setItem(tokenKey,token)
+    } else {
+      localStorage.removeItem(tokenKey)
+    }
+    setApiToken(savedToken)
+    this.setState({ token: token })
   }
 
   toggleCreateAccount = () => {
@@ -26,7 +46,7 @@ class App extends Component {
   handleSignIn = ({ email, password }) => {
     authAPI.signIn({ email, password })
       .then(json => {
-        this.setState({ token: json.token })
+        this.setToken(json.token)
       })
       .catch(error => {
         this.setState({ error })
@@ -35,7 +55,7 @@ class App extends Component {
   handleCreateAccount = ({ email, password }) => {
     authAPI.register({ email, password })
       .then(json => {
-        this.setState({ token: json.token })
+        this.setToken(json.token)
       })
       .catch(error => {
         this.setState({ error })
@@ -43,23 +63,18 @@ class App extends Component {
   }
 
   render() {
-    const { error, token, movies, createAccount } = this.state
+    const { error, token, createAccount=false } = this.state
     return (
       <Router>
         <main>
-          <PrimaryNav />
-          { !!error && <p>{ error.message }</p> }
+          <PrimaryNav isSignedIn={!!token} onSignOut={ this.handleSignOut } />
+          { !!error && <ErrorMessage error={error}/> }
 
           <Switch>
             <Route exact path='/' component={ HomePage } />
             <Route path='/signin' render={
               () => (
                 <SignInPage token={ token } createAccount={ createAccount } toggleCreateAccount={ this.toggleCreateAccount } onSignIn={ this.handleSignIn } onCreateAccount={ this.handleCreateAccount} />
-              )
-            } />
-            <Route path='/movies' render={
-              () => (
-                <p>{ token }</p>
               )
             } />
             <Route render={
